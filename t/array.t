@@ -29,7 +29,10 @@ $plist = Mac::PropertyList::Foundation::parse_plist( $array );
 isa_ok( $plist, "Mac::PropertyList::Foundation::array", "Make object  from plist string" );
 is( $plist->count, 4, "Object has right number of values" );
 
+use Data::Dumper;
 my @values = $plist->values;
 ok( eq_array( \@values, [qw(Mimi Roscoe Juliet Buster)] ), 
-	"Object has right values" );
+	"Object has right values" ) or diag (
+    "Got: ", Dumper( \@values ), " expected: ", join( ', ', qw(Mimi Roscoe Juliet Buster) )
+);
 

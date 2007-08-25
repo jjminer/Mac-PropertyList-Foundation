@@ -65,9 +65,29 @@ sub load_file {
 
     $self->{plist_file} = $plist_file;
 
-    $self = Mac::PropertyList::Foundation::dict->new(
-        dict => NSDictionary->dictionaryWithContentsOfFile_( $plist_file )
-    );
+    # Hack.  Need to guess what it is because there seems to be no good way to
+    # tell..
+
+    my $data = NSDictionary->dictionaryWithContentsOfFile_( $plist_file );
+
+    if ( ref( $data ) eq 'NSCFDictionary' ) {
+        return $self = Mac::PropertyList::Foundation::dict->new(
+            dict => $data
+        );
+    }
+
+    $data = NSArray->arrayWithContentsOfFile_( $plist_file );
+
+    if ( ref( $data ) eq 'NSCFArray' ) {
+        return $self = Mac::PropertyList::Foundation::array->new(
+            array => $data
+        );
+    }
+
+    croak( "Could not load file '$plist_file'" );
+
+    return undef;
+
 }
 
 sub parse_plist {
@@ -79,16 +99,14 @@ sub parse_plist {
     }
 
     my $tempdir = tempdir(
-        # CLEANUP => 1
+        CLEANUP => 1
     );
-
-    warn( "Temp Dir: $tempdir" );
 
     my ( $fh, $tempfile ) = tempfile( DIR => $tempdir );
 
-    warn( "Temp File: $tempfile" );
-
     $fh->print( $text );
+
+    # warn( "Creating Plist file ($tempfile) from:\n$text\n" );
 
     $fh->close;
 
@@ -205,14 +223,19 @@ sub exists {
     return 1 == 1;
 }
 
-## in scalar context, return count() to save all of the execution!
+#
+sub as_basic_data {
+    my $self = shift;
+
+    return { map {
+        $_->can( 'as_basic_data' ) ? $_->as_basic_data : undef => $self->get( $_ )->as_basic_data
+    } $self->keys }
+}# in scalar context, return count() to save all of the execution!
 
 sub keys {
     my $self = shift;
 
-    return map {
-        Mac::PropertyList::Foundation::Value->new( $_ )
-    } Mac::PropertyList::Foundation::array->new(
+    return Mac::PropertyList::Foundation::array->new(
         array => $self->{plist}->allKeys(),
     )->entries;
 }
@@ -302,22 +325,48 @@ sub get {
     return Mac::PropertyList::Foundation::Value->new( $val );
 }
 
-## In a scalar context, return count() to avoid all of the processing..
-## Also change variable name. :)
-
 sub entries {
     my $self = shift;
 
-    my @keys = ();
+    $self->values;
+}
+
+sub values {
+    my $self = shift;
+
+    return $self->count unless ( wantarray );
+
+    my @values = ();
 
     my $enum = $self->{plist}->objectEnumerator();
 
     while ( my $val = $enum->nextObject() ) {
         last unless ( $$val );
-        push @keys, $val;
+
+        if ( ref($val) eq 'NSCFDictionary' ) {
+            push @values, new Mac::PropertyList::Foundation::dict(
+                dict => $val,
+            );
+        }
+        elsif ( ref($val) eq 'NSCFArray' ) {
+            push @values, new Mac::PropertyList::Foundation::array(
+                array => $val,
+            );
+        }
+        else {
+            push @values, Mac::PropertyList::Foundation::Value->new($val);
+        }
     }
 
-    return @keys;
+    return @values;
+}
+
+sub as_basic_data {
+    my $self = shift;
+
+    return [ map {
+        $_->can( 'as_basic_data' ) ? $_->as_basic_data : undef
+    } $self->values ]
 }
 
 sub next_entry {
@@ -398,6 +447,17 @@ sub num_value {
     return $self->{num_value} if ( defined( $self->{num_value} ) );
 
     return $self->{num_value} = $self->{value}->doubleValue();
+}
+
+sub as_basic_data {
+    my $self = shift;
+
+    $self->str_value;
+}
+
+sub str_value {
+    my $self = shift;
+    croak( "You must redefine str_value in ", ref($self) );
 }
 
 1;
