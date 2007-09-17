@@ -94,7 +94,10 @@ is_deeply(
   "basic data from nested dicts",
 );
 
-my $scalar = <<'HERE';
+SKIP: {
+    skip( 'Cannot parse a single scalar as a PList with Foundation API', 1 );
+
+    my $scalar = <<'HERE';
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -102,8 +105,9 @@ my $scalar = <<'HERE';
 </plist>
 HERE
 
-is_deeply(
-  Mac::PropertyList::Foundation::parse_plist($scalar)->as_basic_data,
-  59,
-  "basic data from a scalar",
-);
+    is_deeply(
+        Mac::PropertyList::Foundation::parse_plist($scalar)->as_basic_data,
+        59,
+        "basic data from a scalar",
+    );
+}

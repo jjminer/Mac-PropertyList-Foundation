@@ -160,11 +160,19 @@ sub new {
 
         $self->{plist} = $params{dict};
     }
+=for some_other_time
+    # Not sure what to do here...
     else {
-        die( "argument must be specified." );
+        carp( "argument must be specified." );
     }
+=cut
 
     return bless $self, $class;
+}
+
+sub value {
+    my $self = shift;
+    return $self->get( @_ );
 }
 
 sub get {
@@ -172,7 +180,7 @@ sub get {
     my $self = shift;
     my $key = shift;
 
-    # print "Getting: $key\n";
+    # carp "Getting: $key\n";
     if (
         defined( $self->{cache}->{"$key"} )
     ) {
@@ -180,6 +188,8 @@ sub get {
     }
 
     my $val = $self->{plist}->objectForKey_( "$key" );
+
+    # carp( 'get(', "$key", '): ', ref($val), " ($val)($$val)" );
 
     if ( ref($val) eq 'NSCFDictionary' ) {
         return $self->{cache}->{"$key"} = Mac::PropertyList::Foundation::dict->new(
@@ -193,6 +203,10 @@ sub get {
     }
 
     if ( ref($val) eq 'SCALAR' ) {
+        # Aha... This appears to be the 'not found' case
+        if ( $$val eq '0' ) {
+            return 0;
+        }
         carp( "Somehow wound up with a scalar ref from objectForKey: $$val" );
         return;
     }
@@ -201,29 +215,31 @@ sub get {
 }
 
 sub set {
-    die( __PACKAGE__, ": set not implemented." );
+    croak( __PACKAGE__, ": set not implemented." );
 }
 
 sub delete {
-    die( __PACKAGE__, ": delete not implemented." );
+    croak( __PACKAGE__, ": delete not implemented." );
 }
 
 sub exists {
     my $self = shift;
     my $key = shift;
 
-    my $tmp = $self->{plist}->objectForKey_( "$key" );
+    my $tmp = $self->get( $key );
 
-    return 1 == 0 if (
-        !defined( $tmp )
-        || !defined( $$tmp )
-        || !ref($$tmp)
+    # carp( 'exists: ', $tmp, ' - ', ref($tmp) );
+
+    # for some reason the Mac::PropertyList tests expect this to return 0..  I
+    # would expect it to return boolean 0 == 1..
+    return 0 unless (
+        defined($tmp) && ref($tmp)
     );
 
     return 1 == 1;
+
 }
 
-#
 sub as_basic_data {
     my $self = shift;
 
@@ -237,6 +253,14 @@ sub keys {
 
     return Mac::PropertyList::Foundation::array->new(
         array => $self->{plist}->allKeys(),
+    )->entries;
+}
+
+sub values {
+    my $self = shift;
+
+    return Mac::PropertyList::Foundation::array->new(
+        array => $self->{plist}->allValues(),
     )->entries;
 }
 
@@ -255,7 +279,7 @@ sub next_key {
 sub count {
     my $self = shift;
 
-    return $self->{plist}->count;
+    return defined($self->{plist}) ? $self->{plist}->count : 0;
 }
 
 sub as_string {
@@ -410,6 +434,7 @@ use Foundation;
 use Data::Dumper;
 
 use overload
+    cmp  => \&compare,
     '0+' => \&num_value;
 
 sub new {
@@ -460,6 +485,12 @@ sub str_value {
     croak( "You must redefine str_value in ", ref($self) );
 }
 
+sub compare {
+    my $left = shift;
+    my $right = shift;
+    return $left->str_value cmp $right->str_value;
+}
+
 1;
 
 package Mac::PropertyList::Foundation::String;
@@ -469,7 +500,8 @@ use Carp qw(croak carp);
 use Foundation;
 use Data::Dumper;
 use base qw/Mac::PropertyList::Foundation::Value/;
-use overload '""' => \&str_value;
+use overload
+    '""' => \&str_value;
 
 sub new {
     my $proto = shift;
