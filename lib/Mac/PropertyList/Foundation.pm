@@ -90,6 +90,16 @@ sub load_file {
 
 }
 
+sub _get_tmp_file {
+    my $tempdir = tempdir(
+        CLEANUP => 1
+    );
+
+    my ( $fh, $tempfile ) = tempfile( DIR => $tempdir );
+
+    return $fh, $tempfile
+}
+
 sub parse_plist {
     my $self = shift;
     my $text = shift;
@@ -98,11 +108,7 @@ sub parse_plist {
         $text = $self;
     }
 
-    my $tempdir = tempdir(
-        CLEANUP => 1
-    );
-
-    my ( $fh, $tempfile ) = tempfile( DIR => $tempdir );
+    my ( $fh, $tempfile ) = _get_tmp_file();
 
     $fh->print( $text );
 
@@ -111,6 +117,50 @@ sub parse_plist {
     $fh->close;
 
     return $self = load_file( $tempfile );
+}
+
+sub parse_plist_fh {
+    my $self = shift;
+    my $fh_in = shift;
+
+    if ( !ref($self) ) {
+        $fh_in = $self;
+    }
+
+    my ( $fh, $tempfile ) = _get_tmp_file();
+
+    # inefficient, except when the file is large..
+    $fh->print( $_ ) while ( <$fh_in> );
+
+
+    # warn( "Creating Plist file ($tempfile) from:\n$text\n" );
+
+    $fh->close;
+
+    return $self = load_file( $tempfile );
+}
+
+sub parse_plist_file {
+    my $self = shift;
+    my $file = shift;
+
+    if ( !ref($self) ) {
+        $file = $self;
+    }
+
+    return $self = load_file( $file );
+}
+
+sub plist_as_string {
+    croak( 'plist_as_string is not defined yet...  whoops.' );
+}
+
+sub create_from_hash {
+    croak( 'create_from_hash is not defined yet...  whoops.' );
+}
+
+sub create_from_array {
+    croak( 'create_from_array is not defined yet...  whoops.' );
 }
 
 1;
@@ -133,16 +183,48 @@ sub perlValue {
 
 1;
 
-package Mac::PropertyList::Foundation::dict;
+
+package Mac::PropertyList::Foundation::Item;
 
 use strict;
 use Carp qw(croak carp);
 use Foundation;
 use Data::Dumper;
 
-use overload '""' => \&as_string;
-
 Mac::PropertyList::Foundation::Util->import( qw/perlValue/ );
+
+sub type { 
+    my $self = shift;
+
+    if ( ref($self) eq 'Mac::PropertyList::Foundation::dict' ) {
+        return 'dict';
+    } elsif ( ref($self) eq 'Mac::PropertyList::Foundation::array' ) {
+        return 'array';
+    }
+    
+};
+
+sub value {
+    my $self = shift;
+    carp( 'Value: ', ref($self), wantarray ? ' wanting array ' : ' not wanting array' );
+    return wantarray ? $self->_value : $self;
+}
+
+sub _value {
+    croak( '_value not defined in', __PACKAGE__ );
+}
+
+1;
+
+package Mac::PropertyList::Foundation::dict;
+
+use strict;
+use Carp qw(croak carp);
+use Foundation;
+use Data::Dumper;
+use base qw/Mac::PropertyList::Foundation::Item/;
+
+use overload '""' => \&as_string;
 
 sub new {
     my $proto = shift;
@@ -296,10 +378,9 @@ use strict;
 use Carp qw(croak carp);
 use Foundation;
 use Data::Dumper;
+use base qw/Mac::PropertyList::Foundation::Item/;
 
 use overload '""' => \&as_string;
-
-Mac::PropertyList::Foundation::Util->import( qw/perlValue/ );
 
 sub new {
     my $proto = shift;
