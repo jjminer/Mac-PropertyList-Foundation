@@ -515,8 +515,14 @@ use Foundation;
 use Data::Dumper;
 
 use overload
-    cmp  => \&compare,
-    '0+' => \&num_value;
+    cmp   => \&compare,
+    # '<=>' => \&ship,
+    # '0+'  => \&num_value,
+    # '+'   => \&add,
+    # '-'   => \&min,
+    # '*'   => \&mult,
+    # '/'   => \&div
+    ;
 
 sub new {
     my $proto = shift;
@@ -566,10 +572,90 @@ sub str_value {
     croak( "You must redefine str_value in ", ref($self) );
 }
 
+sub binop {
+    my $left = shift;
+    my $right = shift;
+    my $rev = shift;
+    my $op = shift;
+
+    if ( $rev ) {
+        my $tmp = $left;
+        $left = $right;
+        $right = $tmp;
+    }
+
+    my $lval = ref($left) && $left->can( 'str_value' ) ? $left->str_value : $left;
+    my $rval = ref($right) && $right->can( 'str_value' ) ? $right->str_value : $right;
+
+    warn( "binop( $lval, $rval, $rev, $op )" );
+    # warn( "lval: ", \$lval );
+    # warn( "rval: ", \$rval );
+
+    if ( $op eq '+' ) {
+        return $lval + $rval;
+    } elsif ( $op eq '-' ) {
+        return $lval - $rval;
+    } elsif ( $op eq '*' ) {
+        return $lval * $rval;
+    } elsif ( $op eq '/' ) {
+        return $lval / $rval;
+    } elsif ( $op eq 'cmp' ) {
+        return $lval cmp $rval;
+    } elsif ( $op eq '<=>' ) {
+        return $lval <=> $rval;
+    } else {
+        croak( "Unknown op '$op' used on $lval and $rval" );
+    }
+    return undef;
+}
+
 sub compare {
     my $left = shift;
     my $right = shift;
-    return $left->str_value cmp $right->str_value;
+
+    # warn( "left: ", \$left );
+    # warn( "right: ", \$right );
+
+    my $lval = ref($left) && $left->can( 'str_value' ) ? $left->str_value : $left;
+    my $rval = ref($right) && $right->can( 'str_value' ) ? $right->str_value : $right;
+    # warn( "lval: ", \$lval );
+    # warn( "rval: ", \$rval );
+
+    return $lval cmp $rval;
+
+
+    # return $left->binop( @_, 'cmp' );
+    
+}
+
+sub ship {
+    my $left = shift;
+
+    return $left->binop( @_, '<=>' );
+}
+
+sub min {
+    my $left = shift;
+
+    return return $left->binop( @_, '-' )
+}
+
+sub mult {
+    my $left = shift;
+
+    return return $left->binop( @_, '*' )
+}
+
+sub div {
+    my $left = shift;
+
+    return return $left->binop( @_, '/' )
+}
+
+sub add {
+    my $left = shift;
+
+    return return $left->binop( @_, '+' )
 }
 
 1;
