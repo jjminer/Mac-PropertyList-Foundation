@@ -534,12 +534,13 @@ use Data::Dumper;
 
 use overload
     cmp   => \&compare,
-    # '<=>' => \&ship,
-    # '0+'  => \&num_value,
-    # '+'   => \&add,
-    # '-'   => \&min,
-    # '*'   => \&mult,
-    # '/'   => \&div
+    '<=>' => \&ship,
+    '0+'  => \&num_value,
+    '+'   => \&add,
+    '-'   => \&min,
+    '*'   => \&mult,
+    '/'   => \&div,
+    ''    => \&str_value,
     ;
 
 sub new {
@@ -605,7 +606,7 @@ sub binop {
     my $lval = ref($left) && $left->can( 'str_value' ) ? $left->str_value : $left;
     my $rval = ref($right) && $right->can( 'str_value' ) ? $right->str_value : $right;
 
-    warn( "binop( $lval, $rval, $rev, $op )" );
+    # warn( "binop( $lval, $rval, $rev, $op )" );
     # warn( "lval: ", \$lval );
     # warn( "rval: ", \$rval );
 
@@ -639,10 +640,10 @@ sub compare {
     # warn( "lval: ", \$lval );
     # warn( "rval: ", \$rval );
 
-    return $lval cmp $rval;
+    # return $lval cmp $rval;
 
 
-    # return $left->binop( @_, 'cmp' );
+    return $left->binop( @_, 'cmp' );
     
 }
 
