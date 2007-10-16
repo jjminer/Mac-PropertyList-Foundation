@@ -254,32 +254,47 @@ sub new {
 
 sub value {
     my $self = shift;
-    return $self->get( @_ );
+    my $item = shift;
+    return $self->get( $item );
 }
 
 sub get {
+    ### Caching removed because it creates a "Attempt to free unreferenced scalar" error
 
     my $self = shift;
     my $key = shift;
 
     # carp "Getting: $key\n";
+=for stupid_caching
     if (
         defined( $self->{cache}->{"$key"} )
     ) {
+        carp "Returning ", $self->{cache}->{"$key"}, " for $key\n";
         return $self->{cache}->{"$key"}
     }
+=cut
 
     my $val = $self->{plist}->objectForKey_( "$key" );
 
     # carp( 'get(', "$key", '): ', ref($val), " ($val)($$val)" );
 
     if ( ref($val) eq 'NSCFDictionary' ) {
+=for stupid_caching
         return $self->{cache}->{"$key"} = Mac::PropertyList::Foundation::dict->new(
+            dict => $val,
+        );
+=cut
+        return Mac::PropertyList::Foundation::dict->new(
             dict => $val,
         );
     }
     elsif ( ref($val) eq 'NSCFArray' ) {
+=for stupid_caching
         return $self->{cache}->{"$key"} = Mac::PropertyList::Foundation::array->new(
+            array => $val,
+        );
+=cut
+        return Mac::PropertyList::Foundation::array->new(
             array => $val,
         );
     }
@@ -293,7 +308,10 @@ sub get {
         return;
     }
 
+=for stupid_caching
     return $self->{cache}->{"$key"} = Mac::PropertyList::Foundation::Value->new( $val );
+=cut
+    return Mac::PropertyList::Foundation::Value->new( $val );
 }
 
 sub set {

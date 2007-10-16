@@ -30,7 +30,6 @@ $plist = Mac::PropertyList::Foundation::parse_plist( $dict );
 isa_ok( $plist, 'Mac::PropertyList::Foundation::dict' );
 is( $plist->count, 2, "Has right number of keys" );
 isnt( $plist->count, 3, "Hasn't wrong number of keys" );
-
 my @keys = sort $plist->keys;
 ok( eq_array( \@keys, [qw(Buster Mimi)] ), "Check hash keys" );
 
@@ -55,3 +54,4 @@ SKIP: {
     is( $plist->count, 1, "Has right count after delete" );
 }
 
+# vim: set ft=perl:
