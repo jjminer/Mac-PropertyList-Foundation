@@ -302,7 +302,7 @@ sub get {
     if ( ref($val) eq 'SCALAR' ) {
         # Aha... This appears to be the 'not found' case
         if ( $$val eq '0' ) {
-            return 0;
+            return undef;
         }
         carp( "Somehow wound up with a scalar ref from objectForKey: $$val" );
         return;
@@ -597,6 +597,13 @@ sub binop {
     my $rev = shift;
     my $op = shift;
 
+    # carp "left undef" if (!defined($left));
+    # carp "right undef" if (!defined($right));
+    # carp "rev undef" if (!defined($rev));
+    # carp "op undef" if (!defined($op));
+
+    # carp "1: op[$op] - left[$left] - right[$right] - rev[$rev]\n";
+
     if ( $rev ) {
         my $tmp = $left;
         $left = $right;
@@ -609,6 +616,8 @@ sub binop {
     # warn( "binop( $lval, $rval, $rev, $op )" );
     # warn( "lval: ", \$lval );
     # warn( "rval: ", \$rval );
+
+    # carp "$op - $lval - $rval\n";
 
     if ( $op eq '+' ) {
         return $lval + $rval;
@@ -630,13 +639,15 @@ sub binop {
 
 sub compare {
     my $left = shift;
-    my $right = shift;
+    # my $right = shift;
 
     # warn( "left: ", \$left );
     # warn( "right: ", \$right );
+    # carp( "left: $left" );
+    # carp( "right: $right" );
 
-    my $lval = ref($left) && $left->can( 'str_value' ) ? $left->str_value : $left;
-    my $rval = ref($right) && $right->can( 'str_value' ) ? $right->str_value : $right;
+    # my $lval = ref($left) && $left->can( 'str_value' ) ? $left->str_value : $left;
+    # my $rval = ref($right) && $right->can( 'str_value' ) ? $right->str_value : $right;
     # warn( "lval: ", \$lval );
     # warn( "rval: ", \$rval );
 
