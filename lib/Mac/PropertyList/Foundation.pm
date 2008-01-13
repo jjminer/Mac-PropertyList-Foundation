@@ -541,6 +541,8 @@ use overload
     '*'   => \&mult,
     '/'   => \&div,
     ''    => \&str_value,
+    '>>'  => \&shift_r,
+    '<<'  => \&shift_l,
     ;
 
 sub new {
@@ -631,6 +633,10 @@ sub binop {
         return $lval cmp $rval;
     } elsif ( $op eq '<=>' ) {
         return $lval <=> $rval;
+    } elsif ( $op eq '>>' ) {
+        return $lval >> $rval;
+    } elsif ( $op eq '<<' ) {
+        return $lval <=> $rval;
     } else {
         croak( "Unknown op '$op' used on $lval and $rval" );
     }
@@ -685,7 +691,19 @@ sub div {
 sub add {
     my $left = shift;
 
-    return return $left->binop( @_, '+' )
+    return $left->binop( @_, '+' );
+}
+
+sub shift_r {
+    my $left = shift;
+
+    return $left->binop( @_, '>>' );
+}
+
+sub shift_l {
+    my $left = shift;
+
+    return $left->binop( @_, '<<' );
 }
 
 1;
